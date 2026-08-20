@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Requirements Document (PRD): Turf Booking Platform (Ratlam MVP)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 950px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #111; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-top: 30px; }
+        h1 { font-size: 28px; }
+        h2 { font-size: 22px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: top; }
+        th { background-color: #f4f4f4; }
+        code, pre { background-color: #f7f7f7; font-family: monospace; padding: 2px 6px; border-radius: 4px; }
+        pre { padding: 15px; overflow-x: auto; border: 1px solid #e0e0e0; font-size: 13px; line-height: 1.4; }
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .highlight { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px 15px; margin: 20px 0; }
+        .warning { background-color: #fff7ed; border-left: 4px solid #f97316; padding: 10px 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Product Requirements Document (PRD): Turf Booking Platform (Ratlam MVP)</h1>
+
+    <div class="highlight">
+        <strong>Core Strategy:</strong> Eliminate double-bookings and digitize turf management in Ratlam without forcing users through a clunky payment gateway. 1-Tap Booking, Single-Source-of-Truth Slot Matrix, Double-Booking Elimination.
+    </div>
+
+    <h2>1. Pain Point vs. Platform Solution Matrix</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Turf Owner Pain Point</th>
+                <th>Platform Technical Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1</strong></td>
+                <td><strong>Double-Booking Nightmare:</strong> Taking bookings across phone calls, WhatsApp, and walk-ins simultaneously without a central database.</td>
+                <td><strong>Single Source of Truth Calendar:</strong> Real-time atomic database locking. When a slot is booked online or blocked manually by the owner, it instantly turns red everywhere via WebSockets.</td>
+            </tr>
+            <tr>
+                <td><strong>2</strong></td>
+                <td><strong>Last-Minute No-Shows:</strong> Zero financial friction for users to cancel or simply not show up after phone bookings.</td>
+                <td><strong>1-Tap OTP Lock + 1-Hour Pre-Game Auto-Reconfirmation:</strong> Users book instantly via Phone OTP. 1 hour before match time, an automated WhatsApp message asks them to tap "Confirm Attendance". If unconfirmed, the slot automatically re-opens. Repeat offenders get blacklisted.</td>
+            </tr>
+            <tr>
+                <td><strong>3</strong></td>
+                <td><strong>Overtime Slot Conflicts:</strong> Team wants to extend time when the next slot is booked.</td>
+                <td><strong>55-Min Game Rule & Extension Guard:</strong> 5-minute buffer per slot. Owner app blocks top-ups if the adjacent slot is already booked and alerts both teams via WhatsApp 10 minutes before time ends.</td>
+            </tr>
+            <tr>
+                <td><strong>4</strong></td>
+                <td><strong>Idle Afternoon Inventory:</strong> High demand during evening lights, zero demand during daytime heat.</td>
+                <td><strong>Dynamic Off-Peak Pricing Rule Engine:</strong> Automated rule builder allowing owners to set lower daytime rates.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Module & Feature Breakdown</h2>
+
+    <h3>Module A: Player-Facing Application (Mobile Web / PWA)</h3>
+    <p>The primary user experience is delivered via a Progressive Web App (PWA) to avoid friction with native app stores while maintaining a native feel.</p>
+    <ul>
+        <li><strong>PWA Capabilities & Constraints:</strong> Installable to the home screen, app-like navigation, and strict server-authoritative logic (cached data must never be used to confirm a booking).</li>
+        <li><strong>Identity & Auth (Low Friction):</strong> Phone Number + OTP Login via Fast2SMS and Supabase. Persistent Guest Browsing allowed until "Proceed / Book Slot" is clicked.</li>
+        <li><strong>Discovery & Search:</strong> Home Screen Turf Feed with cover photos, sport tags (e.g., Badminton, Pickleball, Turf Football), surface details, and hardcoded Ratlam city filter for V1.</li>
+        <li><strong>Multi-Court & Multi-Slot Booking Engine (Zomato/District Flow):</strong> 
+            <ul>
+                <li>Interactive hourly slot grid grouped by sport and time.</li>
+                <li>Drill-down view to select individual pitches/courts (e.g., Court 1, Court 2) with clear surface metadata (e.g., Outdoor | Synthetic | Standard).</li>
+                <li><strong>Multi-Selection Support:</strong> Users can select multiple courts or multiple consecutive hours in a single transaction.</li>
+                <li>Frictionless "Pay at Venue" Checkout confirms all selected courts in under 10 seconds.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Module B: Turf Owner Dashboard (Web / Mobile)</h3>
+    <ul>
+        <li><strong>Multi-Ground Management & Operations:</strong> Owners can add unlimited grounds/pitches with custom names, tags, and surface metadata. Visual Live Calendar allows toggling or side-by-side viewing of multiple grounds.</li>
+        <li><strong>1-Tap Manual Slot Block (For Walk-ins):</strong> Instantly lock out online double-booking for specific grounds.</li>
+        <li><strong>Overtime & Extension Guard:</strong> "Extend by 30 Mins" button with a Conflict Guard that blocks extensions if the next slot on that specific ground is already reserved.</li>
+        <li><strong>Dynamic Pricing Engine:</strong> Off-Peak Rule Setup (e.g., Mon–Fri, 11 AM – 4 PM = ₹500/hr).</li>
+    </ul>
+
+    <h3>Module C: Automated Notification Engine</h3>
+    <ul>
+        <li><strong>WhatsApp Business API (Primary Channel):</strong> Instant confirmation ticket (includes breakdown of all courts/slots booked), 1-Hour Match reminder, and Overtime warning sent 10 minutes before slot end.</li>
+        <li><strong>SMS Service:</strong> Strictly used for high-speed Phone Login OTPs.</li>
+    </ul>
+
+    <h3>Module D: Super Admin Dashboard (Platform Owners)</h3>
+    <ul>
+        <li><strong>Turf & Vendor Management:</strong> Add new turfs, edit details, upload cover photos, and toggle status (Active, Suspended).</li>
+        <li><strong>User & Risk Management:</strong> Global Blacklist Manager to view and restrict users who triggered a "No-Show" across all turfs on the platform.</li>
+    </ul>
+
+    <h2>3. Finalized Tech Stack & Architecture (100% Supabase Native)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Architectural Layer</th>
+                <th>Technology Selected</th>
+                <th>Technical Rationale</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Frontend & PWA</strong></td>
+                <td><strong>Next.js 15 (App Router)</strong></td>
+                <td>Server-Side Rendering (SSR) for instant mobile loading, structured to serve as an installable PWA.</td>
+            </tr>
+            <tr>
+                <td><strong>UI & Styling</strong></td>
+                <td><strong>Tailwind CSS + <code>shadcn/ui</code></strong></td>
+                <td>Component-level ownership, rapid mobile-first UI development.</td>
+            </tr>
+            <tr>
+                <td><strong>Database & Auth</strong></td>
+                <td><strong>Supabase (PostgreSQL)</strong></td>
+                <td>Relational PostgreSQL core for strict ACID compliance. Fast2SMS used for OTP delivery.</td>
+            </tr>
+            <tr>
+                <td><strong>Data Access Strategy</strong></td>
+                <td><strong>100% Supabase Client Native</strong></td>
+                <td>Both read and write operations will be handled directly via the Supabase Client/SDK to leverage built-in auth, RLS, and WebSockets natively.</td>
+            </tr>
+            <tr>
+                <td><strong>Hosting & CI/CD</strong></td>
+                <td><strong>Vercel</strong></td>
+                <td>Automated GitHub deployments, global edge distribution, and zero-cost hosting for MVP.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>4. Development Workflow & Operations (Zero-Cost DevOps Pipeline)</h2>
+    <div class="warning">
+        <strong>Security Imperative:</strong> Booking availability MUST be protected by database transactions. The PWA frontend cannot be trusted to verify slot availability. Furthermore, the Supabase <code>service-role</code> key must NEVER be exposed to browser code.
+    </div>
+    <ul>
+        <li><strong>Local Development is Mandatory:</strong> Developers must use the Supabase CLI to run a local instance of the database and authentication services.</li>
+        <li><strong>Git-Based Migrations:</strong> All database schema changes (tables, columns, relations) must be stored in Git and applied through Supabase migrations. Casual schema edits through the live Supabase dashboard are strictly prohibited.</li>
+        <li><strong>2-Tier Lean Deployment:</strong> Code is tested locally -&gt; Pushed to GitHub <code>main</code> branch -&gt; Vercel automatically deploys to Production connected to the single free Supabase PROD project.</li>
+    </ul>
+
+    <h2>5. Database Design & Data Model (Drizzle ORM)</h2>
+    <p>The database relies on strict PostgreSQL constraints to serve as the single source of truth. The schema operates on a <code>Turfs ➔ Grounds ➔ Slots</code> hierarchy and utilizes a <strong>Parent-Child Booking Model (`bookings` ➔ `booking_items`)</strong> to enable multi-court and multi-hour checkouts seamlessly.</p>
+    
+    <h3>5.1 Booking & Double-Booking Strategy</h3>
+    <ol>
+        <li>Represent each playable slot as a concrete row in the <code>slots</code> table linked to a specific <code>ground_id</code> (e.g., Court 1), generated for a 30-60 day rolling window.</li>
+        <li>When a user selects 1 or more courts/slots and clicks Proceed, a PostgreSQL transaction claims all chosen slot rows utilizing <code>SELECT ... FOR UPDATE</code>.</li>
+        <li>If all slots are available, a single parent record is created in <code>bookings</code>, and child records are inserted into <code>booking_items</code> linking to each <code>slot_id</code>.</li>
+        <li>A <code>UNIQUE(slot_id)</code> constraint on <code>booking_items</code> serves as the ultimate safety guard ensuring no slot can ever be claimed by two active booking items.</li>
+        <li>If even 1 selected court in a multi-court checkout fails validation, the entire transaction rolls back safely.</li>
+        <li>Calculate and snapshot the <code>price_snapshot</code> on each item and sum into <code>total_amount</code> on the parent booking record.</li>
+    </ol>
+
+    <h3>5.2 Drizzle Schema Starter (MVP Core - Multi-Court & Parent-Child Enabled)</h3>
+<pre>
+import {
+  pgTable, uuid, varchar, timestamp, date, numeric, boolean, pgEnum, uniqueIndex, index
+} from "drizzle-orm/pg-core";
+
+export const userRole = pgEnum("user_role", ["PLAYER", "OWNER", "MANAGER", "ADMIN"]);
+export const userStatus = pgEnum("user_status", ["ACTIVE", "SUSPENDED", "DELETED"]);
+export const slotStatus = pgEnum("slot_status", ["AVAILABLE", "BOOKED", "BLOCKED", "MAINTENANCE"]);
+export const bookingStatus = pgEnum("booking_status", ["CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW", "EXPIRED"]);
+export const bookingSource = pgEnum("booking_source", ["ONLINE", "PHONE", "WALK_IN", "OWNER"]);
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey(), // Links directly to Supabase Auth UUID
+  phone: varchar("phone", { length: 15 }).notNull().unique(),
+  fullName: varchar("full_name", { length: 120 }),
+  role: userRole("role").notNull().default("PLAYER"),
+  status: userStatus("status").notNull().default("ACTIVE"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const cities = pgTable("cities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 80 }).notNull().unique(),
+  state: varchar("state", { length: 80 }).notNull(),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("Asia/Kolkata"),
+});
+
+export const turfs = pgTable("turfs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cityId: uuid("city_id").notNull().references(() => cities.id),
+  ownerId: uuid("owner_id").notNull().references(() => users.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  address: varchar("address", { length: 500 }).notNull(),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("Asia/Kolkata"),
+});
+
+// Multi-Ground / Court Support Table
+export const grounds = pgTable("grounds", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  turfId: uuid("turf_id").notNull().references(() => turfs.id),
+  name: varchar("name", { length: 80 }).notNull(), // e.g., "Court 1"
+  code: varchar("code", { length: 20 }).notNull(), // e.g., "C1"
+  surfaceType: varchar("surface_type", { length: 50 }), // e.g., "Synthetic", "Turf", "Wooden"
+  environment: varchar("environment", { length: 20 }), // e.g., "Outdoor", "Indoor"
+  isActive: boolean("is_active").notNull().default(true),
+}, (t) => ({
+  turfIdx: index("grounds_turf_idx").on(t.turfId),
+}));
+
+export const slots = pgTable("slots", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  turfId: uuid("turf_id").notNull().references(() => turfs.id), 
+  groundId: uuid("ground_id").notNull().references(() => grounds.id), // Links slot to specific pitch/court
+  sportId: uuid("sport_id").notNull(), 
+  slotDate: date("slot_date").notNull(),
+  startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+  endAt: timestamp("end_at", { withTimezone: true }).notNull(),
+  basePrice: numeric("base_price", { precision: 10, scale: 2 }).notNull(),
+  finalPrice: numeric("final_price", { precision: 10, scale: 2 }).notNull(),
+  status: slotStatus("status").notNull().default("AVAILABLE"),
+}, (t) => ({
+  slotIdentity: uniqueIndex("slots_ground_start_uidx").on(t.groundId, t.startAt),
+  calendarIdx: index("slots_calendar_idx").on(t.turfId, t.slotDate, t.status),
+}));
+
+// Parent Booking Record
+export const bookings = pgTable("bookings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  bookingCode: varchar("booking_code", { length: 20 }).notNull().unique(),
+  turfId: uuid("turf_id").notNull().references(() => turfs.id),
+  userId: uuid("user_id").references(() => users.id),
+  customerName: varchar("customer_name", { length: 120 }).notNull(),
+  customerPhone: varchar("customer_phone", { length: 15 }).notNull(),
+  source: bookingSource("source").notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(), // Sum of all claimed slots
+  status: bookingStatus("status").notNull().default("CONFIRMED"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  phoneIdx: index("bookings_phone_idx").on(t.customerPhone),
+  turfCreatedIdx: index("bookings_turf_created_idx").on(t.turfId, t.createdAt),
+}));
+
+// Child Booking Items (Allows selecting multiple courts/slots in 1 booking)
+export const bookingItems = pgTable("booking_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  bookingId: uuid("booking_id").notNull().references(() => bookings.id),
+  slotId: uuid("slot_id").notNull().unique(), // Unique guard ensures slot cannot belong to 2 booking items
+  priceSnapshot: numeric("price_snapshot", { precision: 10, scale: 2 }).notNull(),
+});
+</pre>
+
+    <h2>6. Implementation Phasing & Tasks</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Task Category</th>
+                <th>Responsibility</th>
+                <th>Recommended Stack</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Auth & Session Mgmt</strong></td>
+                <td>Harsh</td>
+                <td>Supabase Auth / Fast2SMS</td>
+            </tr>
+            <tr>
+                <td><strong>DevOps & Infrastructure</strong></td>
+                <td>Bhupendra & Harsh</td>
+                <td>Vercel + Supabase CLI + GitHub Actions</td>
+            </tr>
+            <tr>
+                <td><strong>Frontend, PWA & UX</strong></td>
+                <td>Joint</td>
+                <td>Next.js PWA / React + Tailwind CSS</td>
+            </tr>
+            <tr>
+                <td><strong>Database & Constraints</strong></td>
+                <td>Joint</td>
+                <td>Drizzle Schema + PostgreSQL Transactions</td>
+            </tr>
+            <tr>
+                <td><strong>Super Admin Dashboard</strong></td>
+                <td>Joint</td>
+                <td>React Admin / Refine / Retool</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
