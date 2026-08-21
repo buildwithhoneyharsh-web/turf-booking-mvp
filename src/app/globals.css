@@ -46,6 +46,113 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Stitch Custom Tokens */
+  --color-testimonial-orange: #f55a3c;
+  --color-surface-bright: #1c1c1e;
+  --color-on-tertiary-fixed-variant: #a8a8aa;
+  --color-brand-green-soft: #00d4a4;
+  --color-hero-sky-from: #1a2835;
+  --color-on-secondary-fixed: #0a0a0a;
+  --color-inverse-on-surface: #1c1c1e;
+  --color-on-primary-fixed-variant: #a8a8aa;
+  --color-on-primary-fixed: #ffffff;
+  --color-surface-code: #1c1c1e;
+  --color-surface-dim: #1c1c1e;
+  --color-surface-container: #0a0a0a;
+  --color-brand-tag: #3772cf;
+  --color-hero-dark-from: #1a3d4a;
+  --color-tertiary-container: #1c1c1e;
+  --color-tertiary-fixed: #1c1c1e;
+  --color-error-container: #ffdad6;
+  --color-hero-sky-to: #0a0a0a;
+  --color-surface-container-low: #1c1c1e;
+  --color-surface-container-lowest: #1c1c1e;
+  --color-on-tertiary-fixed: #ffffff;
+  --color-stone: #a8a8aa;
+  --color-on-secondary-container: #0a0a0a;
+  --color-on-secondary-fixed-variant: #00513d;
+  --color-inverse-primary: #0a0a0a;
+  --color-hero-dark-to: #2d5a4f;
+  --color-brand-annotate: #00d4a4;
+  --color-on-tertiary-container: #a8a8aa;
+  --color-hairline: #2d2d2d;
+  --color-on-primary-container: #a8a8aa;
+  --color-on-surface-variant: #a8a8aa;
+  --color-brand-warn: #c37d0d;
+  --color-secondary-fixed: #ffffff;
+  --color-surface-tint: #5f5e5e;
+  --color-inverse-surface: #ffffff;
+  --color-brand-error: #d45656;
+  --color-secondary-fixed-dim: #e5e5e5;
+  --color-surface-container-highest: #0a0a0a;
+  --color-surface-container-high: #1c1c1e;
+  --color-primary-fixed-dim: #c9c6c5;
+  --color-tertiary-fixed-dim: #cac6c3;
+  --color-slate: #3a3a3c;
+  --color-steel: #a8a8aa;
+  --color-brand-green-deep: #00d4a4;
+  
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-hero: 120px;
+  --spacing-md: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  --spacing-lg: 20px;
+  --spacing-section: 64px;
+  --spacing-xxs: 4px;
+
+  --font-hero-display: var(--font-sans);
+  --font-display-lg: var(--font-sans);
+  --font-body-md: var(--font-sans);
+  --font-code-md: var(--font-geist-mono);
+  --font-heading-2: var(--font-sans);
+  --font-heading-3: var(--font-sans);
+  --font-body-sm-medium: var(--font-sans);
+  --font-micro-uppercase: var(--font-sans);
+  --font-heading-1: var(--font-sans);
+
+  --text-hero-display: 72px;
+  --text-hero-display--line-height: 1.05;
+  --text-hero-display--letter-spacing: -2px;
+  --text-hero-display--font-weight: 600;
+
+  --text-display-lg: 56px;
+  --text-display-lg--line-height: 1.10;
+  --text-display-lg--letter-spacing: -1.5px;
+  --text-display-lg--font-weight: 600;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.50;
+  --text-body-md--font-weight: 400;
+
+  --text-code-md: 14px;
+  --text-code-md--line-height: 1.50;
+  --text-code-md--font-weight: 400;
+
+  --text-heading-2: 36px;
+  --text-heading-2--line-height: 1.20;
+  --text-heading-2--letter-spacing: -0.5px;
+  --text-heading-2--font-weight: 600;
+
+  --text-heading-3: 28px;
+  --text-heading-3--line-height: 1.25;
+  --text-heading-3--font-weight: 600;
+
+  --text-body-sm-medium: 14px;
+  --text-body-sm-medium--line-height: 1.50;
+  --text-body-sm-medium--font-weight: 500;
+
+  --text-micro-uppercase: 11px;
+  --text-micro-uppercase--line-height: 1.40;
+  --text-micro-uppercase--letter-spacing: 0.5px;
+  --text-micro-uppercase--font-weight: 600;
+
+  --text-heading-1: 48px;
+  --text-heading-1--line-height: 1.10;
+  --text-heading-1--letter-spacing: -1px;
+  --text-heading-1--font-weight: 600;
 }
 
 :root {
@@ -126,5 +233,20 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .gradient-hero {
+    background: linear-gradient(180deg, #1a2835 0%, #0a0a0a 100%);
+  }
+  .gradient-venue {
+    background: linear-gradient(135deg, #1a3d4a 0%, #2d5a4f 100%);
+  }
+  .diffuse-shadow {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 100px -20px rgba(0, 0, 0, 0.3);
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
+import { bookSlots } from "@/app/actions/bookSlots";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -86,20 +87,53 @@ const generateMockSlots = (groundId: string, sportId: string, dateKey: string) =
   return slots;
 };
 
-export default function SlotMatrix() {
+interface SlotMatrixProps {
+  initialTurf?: any;
+  initialSlots?: any[];
+}
+
+export default function SlotMatrix({ initialTurf, initialSlots = [] }: SlotMatrixProps) {
   const dates = generateDates();
+  
+  // Real or mock data fallbacks
+  const venueId = initialTurf?.id || MOCK_VENUE.id;
+  const venueName = initialTurf?.name || MOCK_VENUE.name;
+  const venueAddress = initialTurf?.address || MOCK_VENUE.address;
+  const venueTimezone = initialTurf?.timezone || MOCK_VENUE.timezone;
+  const venueGrounds = initialTurf?.grounds?.length > 0 ? initialTurf.grounds : MOCK_VENUE.grounds;
   
   // States
   const [selectedDate, setSelectedDate] = useState(dates[0].key);
   const [selectedSport, setSelectedSport] = useState(MOCK_VENUE.sports[0].id);
-  const [selectedGround, setSelectedGround] = useState(MOCK_VENUE.grounds[0].id);
+  const [selectedGround, setSelectedGround] = useState(venueGrounds[0].id);
   const [selectedSlots, setSelectedSlots] = useState<any[]>([]);
   
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState<any | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const slots = generateMockSlots(selectedGround, selectedSport, selectedDate);
+  const slots = initialSlots.length > 0 
+    ? initialSlots
+        .filter(s => s.ground_id === selectedGround && s.sport_id === selectedSport && s.slot_date === selectedDate)
+        .map(s => {
+          const startAt = new Date(s.start_at);
+          const hour = startAt.getHours();
+          const formatTime = (h: number) => {
+            const ampm = h >= 12 ? "PM" : "AM";
+            const displayHour = h % 12 === 0 ? 12 : h % 12;
+            return `${displayHour.toString().padStart(2, "0")}:00 ${ampm}`;
+          };
+          return {
+            id: s.id,
+            timeLabel: formatTime(hour),
+            hour,
+            finalPrice: Number(s.final_price),
+            status: s.status
+          }
+        })
+        .sort((a, b) => a.hour - b.hour)
+    : generateMockSlots(selectedGround, selectedSport, selectedDate);
 
   // Group slots by time of day
   const morningSlots = slots.filter(s => s.hour >= 6 && s.hour < 12);
@@ -125,20 +159,25 @@ export default function SlotMatrix() {
   // Checkout submission
   const handleConfirmBooking = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !customerPhone || selectedSlots.length === 0) return;
+    if (!customerName || !customerPhone || selectedSlots.length === 0 || isPending) return;
 
-    // Simulate book_slots RPC response
-    const mockBookingCode = `TS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    setBookingSuccess({
-      code: mockBookingCode,
-      slots: selectedSlots.map(s => s.timeLabel),
-      total: totalPayable,
-      name: customerName,
-      phone: customerPhone
+    startTransition(async () => {
+      const slotIds = selectedSlots.map(s => s.id);
+      const res = await bookSlots(venueId, customerName, customerPhone, slotIds);
+      
+      if (res.success) {
+        setBookingSuccess({
+          code: res.data.booking_code,
+          slots: selectedSlots.map(s => s.timeLabel),
+          total: totalPayable,
+          name: customerName,
+          phone: customerPhone
+        });
+        setSelectedSlots([]);
+      } else {
+        alert("Booking failed: " + res.error);
+      }
     });
-    
-    // Clear selection
-    setSelectedSlots([]);
   };
 
   return (
@@ -152,10 +191,10 @@ export default function SlotMatrix() {
           <div className="bg-[#1c1c1e] border border-[#2d2d2d] rounded-xl p-6 space-y-3">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white">{MOCK_VENUE.name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-white">{venueName}</h1>
                 <div className="flex items-center space-x-2 text-sm text-[#a8a8aa] mt-1">
                   <MapPin size={16} className="text-[#00d4a4]" />
-                  <span>{MOCK_VENUE.address}</span>
+                  <span>{venueAddress}</span>
                 </div>
               </div>
               <div className="bg-[#0a0a0a] border border-[#2d2d2d] px-3 py-1.5 rounded-lg flex items-center space-x-1">
@@ -167,7 +206,7 @@ export default function SlotMatrix() {
             
             <div className="flex flex-wrap gap-2 pt-2">
               <span className="text-xs font-mono px-2.5 py-1 bg-[#2d2d2d] border border-[#3a3a3c] rounded-full text-[#a8a8aa]">
-                Timezone: {MOCK_VENUE.timezone}
+                Timezone: {venueTimezone}
               </span>
               <span className="text-xs font-mono px-2.5 py-1 bg-[#2d2d2d] border border-[#3a3a3c] rounded-full text-[#00d4a4] flex items-center gap-1">
                 <Sparkles size={12} /> Double-Booking Locked
@@ -240,7 +279,7 @@ export default function SlotMatrix() {
                 <Layers size={14} /> Court / Ground
               </h3>
               <div className="flex gap-2">
-                {MOCK_VENUE.grounds.map((ground) => {
+                {venueGrounds.map((ground: any) => {
                   const isActive = selectedGround === ground.id;
                   return (
                     <button
@@ -257,7 +296,7 @@ export default function SlotMatrix() {
                     >
                       <span className="block text-sm">{ground.name}</span>
                       <span className="block text-[10px] text-[#a8a8aa] font-mono mt-0.5">
-                        {ground.surfaceType}
+                        {ground.surface_type || ground.surfaceType}
                       </span>
                     </button>
                   );
@@ -411,9 +450,10 @@ export default function SlotMatrix() {
                 {/* Confirm Button */}
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#00d4a4] hover:bg-[#00b48a] text-[#0a0a0a] font-bold py-3.5 rounded-lg text-sm tracking-wide transition-all shadow-md shadow-[#00d4a4]/10"
+                  disabled={isPending}
+                  className="w-full bg-[#00d4a4] hover:bg-[#00b48a] text-[#0a0a0a] font-bold py-3.5 rounded-lg text-sm tracking-wide transition-all shadow-md shadow-[#00d4a4]/10 disabled:opacity-50"
                 >
-                  Confirm Booking (Pay at Venue)
+                  {isPending ? "Confirming..." : "Confirm Booking (Pay at Venue)"}
                 </Button>
               </form>
             )}
@@ -422,8 +462,8 @@ export default function SlotMatrix() {
 
           {/* Success Dialog Modal */}
           {bookingSuccess && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-[#1c1c1e] border border-[#2d2d2d] rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-[#1c1c1e] border border-[#2d2d2d] rounded-2xl w-[448px] max-w-full p-6 text-center space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                 <CheckCircle2 className="mx-auto text-[#00d4a4]" size={56} />
                 <div className="space-y-1">
                   <h3 className="text-xl font-bold tracking-tight text-white">Booking Confirmed!</h3>
@@ -438,7 +478,7 @@ export default function SlotMatrix() {
                   <div className="space-y-1 text-xs text-[#a8a8aa]">
                     <div className="flex justify-between">
                       <span>Venue:</span>
-                      <span className="text-white font-medium">{MOCK_VENUE.name}</span>
+                      <span className="text-white font-medium">{venueName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Customer:</span>
